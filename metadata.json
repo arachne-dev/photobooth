@@ -1,0 +1,7 @@
+{
+  "name": "Pastel Style Photo Booth",
+  "description": "A cute and hip style analysis photobooth that prints Vogue-style fashion receipts.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
