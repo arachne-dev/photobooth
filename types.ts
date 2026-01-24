@@ -14,7 +14,7 @@ export interface StyleAnalysis {
 
 export enum AppStatus {
   IDLE = 'IDLE',
-  CAPTURING = 'CAPTURING',
+  COUNTDOWN = 'COUNTDOWN',
   ANALYZING = 'ANALYZING',
   RESULT = 'RESULT'
 }
