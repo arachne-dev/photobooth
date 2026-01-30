@@ -389,6 +389,7 @@ const App: React.FC = () => {
           isOpen={showQRModal}
           onClose={() => setShowQRModal(false)}
           analysisId={savedAnalysisId}
+          analysis={analysis}
         />
       </main>
 
