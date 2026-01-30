@@ -10,6 +10,8 @@ interface QRModalProps {
 const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId }) => {
   const [copied, setCopied] = useState(false);
 
+  console.log('QRModal render - isOpen:', isOpen, 'analysisId:', analysisId);
+
   if (!isOpen) return null;
 
   const shareUrl = analysisId ? `${window.location.origin}/share/${analysisId}` : '';

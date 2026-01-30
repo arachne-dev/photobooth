@@ -160,7 +160,9 @@ const App: React.FC = () => {
 
     // Save to Supabase in the background
     try {
+      console.log('Starting Supabase upload...');
       const imageUrl = await uploadImage(image);
+      console.log('Image uploaded, URL:', imageUrl);
       const analysisId = await saveAnalysis(
         imageUrl,
         result.tags,
@@ -168,8 +170,8 @@ const App: React.FC = () => {
         result.styleDNA,
         timestampStr
       );
-      setSavedAnalysisId(analysisId);
       console.log('Analysis saved with ID:', analysisId);
+      setSavedAnalysisId(analysisId);
     } catch (err) {
       console.error('Failed to save to Supabase:', err);
       // Continue even if save fails - the main feature should still work
@@ -368,7 +370,10 @@ const App: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-8 mt-4">
-                <SecondaryButton onClick={() => setShowQRModal(true)}>
+                <SecondaryButton onClick={() => {
+                  console.log('QR/Link clicked, savedAnalysisId:', savedAnalysisId);
+                  setShowQRModal(true);
+                }}>
                   QR/Link
                 </SecondaryButton>
                 <TextButton onClick={handleReset}>
