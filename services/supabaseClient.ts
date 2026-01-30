@@ -1,13 +1,21 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Debug: log env var status
+console.log('Supabase URL:', supabaseUrl ? 'SET' : 'MISSING');
+console.log('Supabase Key:', supabaseAnonKey ? 'SET' : 'MISSING');
+
+let supabase: SupabaseClient | null = null;
+
+if (supabaseUrl && supabaseAnonKey) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+  console.error('Missing Supabase environment variables - sharing features disabled');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export { supabase };
 
 export interface StyleAnalysisRecord {
   id?: string;
@@ -33,8 +41,17 @@ function dataURLtoBlob(dataURL: string): Blob {
   return new Blob([u8arr], { type: mime });
 }
 
+// Check if Supabase is available
+export function isSupabaseAvailable(): boolean {
+  return supabase !== null;
+}
+
 // Upload image to Supabase Storage and return public URL
 export async function uploadImage(imageDataURL: string): Promise<string> {
+  if (!supabase) {
+    throw new Error('Supabase not initialized - missing environment variables');
+  }
+
   const blob = dataURLtoBlob(imageDataURL);
   const fileName = `photo_${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
 
@@ -64,6 +81,10 @@ export async function saveAnalysis(
   styleDNA: Array<{ label: string; value: number }>,
   timestamp: string
 ): Promise<string> {
+  if (!supabase) {
+    throw new Error('Supabase not initialized - missing environment variables');
+  }
+
   const { data, error } = await supabase
     .from('style_analyses')
     .insert({
@@ -85,6 +106,11 @@ export async function saveAnalysis(
 
 // Fetch analysis by ID (for share page)
 export async function getAnalysisById(id: string): Promise<StyleAnalysisRecord | null> {
+  if (!supabase) {
+    console.error('Supabase not initialized');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('style_analyses')
     .select('*')
