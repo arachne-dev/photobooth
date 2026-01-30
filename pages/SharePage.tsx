@@ -1,0 +1,147 @@
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { getAnalysisById, StyleAnalysisRecord } from '../services/supabaseClient';
+
+const Logo: React.FC = () => (
+  <svg width="43" height="40" viewBox="0 0 43 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M39.4065 13.3904L37.9656 12.4431C37.0233 11.8237 36.4275 10.7936 36.3598 9.66513L36.2322 7.5568C35.8867 1.85809 29.8619 -1.64464 24.7617 0.89009L23.2197 1.65622C22.7004 1.91422 22.1351 2.03436 21.5707 2.02451C21.0063 2.03042 20.4409 1.90536 19.9246 1.64342L18.3885 0.865471C13.3089 -1.70865 7.25666 1.74583 6.866 7.44257L6.72171 9.54991C6.64417 10.6774 6.04149 11.7026 5.09331 12.3151L3.64552 13.2506C1.22991 14.8114 0.0137634 17.3609 2.16518e-05 19.9153C-0.00586768 22.4707 1.18967 25.0291 3.59349 26.6096L5.03442 27.5569C5.97671 28.1763 6.57251 29.2064 6.64024 30.3349L6.76784 32.4432C7.11335 38.1419 13.1381 41.6446 18.2383 39.1099L19.7803 38.3438C20.2996 38.0858 20.8649 37.9656 21.4293 37.9755C21.9937 37.9696 22.5591 38.0946 23.0754 38.3566L24.6115 39.1345C29.6911 41.7086 35.7433 38.2542 36.134 32.5574L36.2783 30.4501C36.3558 29.3226 36.9585 28.2974 37.9067 27.6849L39.3545 26.7494C41.7701 25.1876 42.9862 22.6391 43 20.0837C43.0059 17.5283 41.8103 14.9699 39.4065 13.3894V13.3904ZM14.5643 21.3166L14.3081 21.482C14.1403 21.5904 14.0343 21.7716 14.0206 21.9705L13.995 22.3427C13.9263 23.3491 12.8564 23.9606 11.9583 23.5057L11.6864 23.3678C11.5951 23.3215 11.495 23.2999 11.3949 23.3009C11.2948 23.2989 11.1947 23.3206 11.1034 23.3658L10.8305 23.5017C9.92943 23.9498 8.86444 23.3304 8.80261 22.323L8.78003 21.9498C8.76825 21.7499 8.66224 21.5687 8.49636 21.4584L8.24214 21.291C7.81713 21.0113 7.60609 20.5593 7.60707 20.1073C7.61002 19.6553 7.824 19.2053 8.25195 18.9296L8.50814 18.7641C8.67599 18.6558 8.78199 18.4746 8.79574 18.2757L8.82126 17.9035C8.88997 16.8971 9.95986 16.2856 10.858 16.7405L11.1299 16.8784C11.2212 16.9246 11.3213 16.9463 11.4214 16.9453C11.5215 16.9473 11.6216 16.9256 11.7129 16.8803L11.9858 16.7444C12.8869 16.2964 13.9518 16.9158 14.0137 17.9232L14.0363 18.2964C14.048 18.4963 14.154 18.6775 14.3199 18.7878L14.5741 18.9552C14.9992 19.2349 15.2102 19.6869 15.2092 20.1388C15.2063 20.5908 14.9923 21.0409 14.5643 21.3166Z" fill="#7020D1"/>
+  </svg>
+);
+
+const SharePage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const [analysis, setAnalysis] = useState<StyleAnalysisRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchAnalysis = async () => {
+      if (!id) {
+        setError('Invalid share link');
+        setLoading(false);
+        return;
+      }
+
+      const data = await getAnalysisById(id);
+      if (data) {
+        setAnalysis(data);
+      } else {
+        setError('Analysis not found');
+      }
+      setLoading(false);
+    };
+
+    fetchAnalysis();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Logo />
+          <p className="font-dot text-[28px] text-[#373957] mt-8">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !analysis) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <Logo />
+          <p className="font-pixel text-[32px] text-[#1D1E2C] mt-8">{error || 'Not Found'}</p>
+          <a href="/" className="font-pretendard text-[18px] text-[#A56CE8] mt-4 block hover:underline">
+            Go to Photo Booth
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-white py-8 px-4">
+      {/* Logo */}
+      <div className="flex justify-center mb-8">
+        <Logo />
+      </div>
+
+      {/* Receipt Card */}
+      <div className="max-w-[320px] mx-auto bg-white border-2 border-[#1D1E2C] p-4">
+        {/* Header */}
+        <div className="text-center border-b border-dashed border-[#1D1E2C] pb-4 mb-4">
+          <h1 className="font-pixel text-[24px] text-[#1D1E2C]">MUNZI FIT CHECK</h1>
+          <p className="font-dot text-[14px] text-[#373957] mt-1">{analysis.timestamp}</p>
+        </div>
+
+        {/* Photo */}
+        <div className="mb-4">
+          <img
+            src={analysis.image_url}
+            alt="Style"
+            className="w-full aspect-[4/5] object-cover grayscale"
+          />
+        </div>
+
+        {/* Tags */}
+        <div className="border-t border-dashed border-[#1D1E2C] pt-4 mb-4">
+          <p className="font-pixel text-[14px] text-[#1D1E2C] mb-2">ITEM TAGS</p>
+          <div className="flex flex-wrap gap-2">
+            {analysis.tags.map((tag, index) => (
+              <span
+                key={index}
+                className="font-dot text-[12px] text-[#373957] bg-[#F6F2FC] px-2 py-1"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Style DNA */}
+        <div className="border-t border-dashed border-[#1D1E2C] pt-4 mb-4">
+          <p className="font-pixel text-[14px] text-[#1D1E2C] mb-2">STYLE DNA</p>
+          <div className="space-y-2">
+            {analysis.style_dna.map((item, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <span className="font-dot text-[12px] text-[#373957] w-24">{item.label}</span>
+                <div className="flex-1 h-2 bg-[#F6F2FC] overflow-hidden">
+                  <div
+                    className="h-full bg-[#A56CE8]"
+                    style={{ width: `${item.value}%` }}
+                  />
+                </div>
+                <span className="font-dot text-[12px] text-[#373957] w-8">{item.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="border-t border-dashed border-[#1D1E2C] pt-4">
+          <p className="font-pixel text-[14px] text-[#1D1E2C] mb-2">STYLE ANALYSIS</p>
+          <p className="font-pretendard text-[14px] text-[#373957] leading-relaxed">
+            {analysis.vogue_description}
+          </p>
+        </div>
+
+        {/* Footer */}
+        <div className="border-t border-dashed border-[#1D1E2C] mt-4 pt-4 text-center">
+          <p className="font-dot text-[12px] text-[#373957]">Thanks for visiting MUNZI!</p>
+        </div>
+      </div>
+
+      {/* CTA */}
+      <div className="max-w-[320px] mx-auto mt-8 text-center">
+        <a
+          href="/"
+          className="inline-block px-8 py-3 bg-[#A56CE8] text-white font-pixel text-[18px] rounded-full hover:bg-[#9259D6] transition-colors"
+        >
+          Try Your Own Fit Check
+        </a>
+      </div>
+    </div>
+  );
+};
+
+export default SharePage;

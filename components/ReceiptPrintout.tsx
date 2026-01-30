@@ -1,52 +1,13 @@
 
-import React, { useRef, useState } from 'react';
-import html2canvas from 'html2canvas';
+import React, { forwardRef } from 'react';
 import { StyleAnalysis } from '../types';
-import { printImage } from '../services/printService';
 
 interface ReceiptPrintoutProps {
   analysis: StyleAnalysis;
   onReset: () => void;
 }
 
-export const ReceiptPrintout: React.FC<ReceiptPrintoutProps> = ({ analysis, onReset }) => {
-  const receiptRef = useRef<HTMLDivElement>(null);
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [printStatus, setPrintStatus] = useState<string | null>(null);
-
-  const handlePrint = async () => {
-    if (!receiptRef.current || isPrinting) return;
-
-    setIsPrinting(true);
-    setPrintStatus('CAPTURING...');
-
-    try {
-      const canvas = await html2canvas(receiptRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      });
-
-      const imageData = canvas.toDataURL('image/png');
-
-      setPrintStatus('PRINTING...');
-      const result = await printImage(imageData);
-
-      if (result.success) {
-        setPrintStatus('PRINT COMPLETE!');
-      } else {
-        setPrintStatus(`ERROR: ${result.message}`);
-      }
-    } catch (error) {
-      setPrintStatus('PRINT FAILED');
-      console.error('Print error:', error);
-    } finally {
-      setIsPrinting(false);
-      setTimeout(() => setPrintStatus(null), 3000);
-    }
-  };
+export const ReceiptPrintout = forwardRef<HTMLDivElement, ReceiptPrintoutProps>(({ analysis, onReset }, ref) => {
 
   const renderDNALine = (label: string, value: number) => {
     const dashes = '-'.repeat(30);
@@ -62,7 +23,7 @@ export const ReceiptPrintout: React.FC<ReceiptPrintoutProps> = ({ analysis, onRe
   return (
     <div className="flex flex-col items-center">
       <div
-        ref={receiptRef}
+        ref={ref}
         className="w-[280px] bg-white text-black p-6 border border-gray-200 printing-animation origin-top"
       >
         <div className="space-y-4">
@@ -129,13 +90,6 @@ export const ReceiptPrintout: React.FC<ReceiptPrintoutProps> = ({ analysis, onRe
           </div>
         </div>
       </div>
-
-      {/* Print Status */}
-      {printStatus && (
-        <div className="mt-4 px-6 py-2 bg-[#1D1E2C] text-white font-pixel text-[14px] tracking-wider animate-pulse">
-          {printStatus}
-        </div>
-      )}
     </div>
   );
-};
+});

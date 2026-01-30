@@ -1,8 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ReceiptPrintout } from './components/ReceiptPrintout';
+import QRModal from './components/QRModal';
 import { analyzeFashion } from './services/geminiService';
+import { printImage } from './services/printService';
+import { uploadImage, saveAnalysis } from './services/supabaseClient';
 import { AppStatus, StyleAnalysis } from './types';
+import html2canvas from 'html2canvas';
 
 const Logo: React.FC = () => (
   <svg width="43" height="40" viewBox="0 0 43 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -70,9 +74,14 @@ const App: React.FC = () => {
   const [countdown, setCountdown] = useState<number>(10);
   const [error, setError] = useState<string | null>(null);
   const [showFlash, setShowFlash] = useState<boolean>(false);
+  const [isPrinting, setIsPrinting] = useState<boolean>(false);
+  const [printStatus, setPrintStatus] = useState<string | null>(null);
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
+  const [showQRModal, setShowQRModal] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const startCamera = async () => {
@@ -148,6 +157,24 @@ const App: React.FC = () => {
       timestamp: timestampStr,
       image: image
     });
+
+    // Save to Supabase in the background
+    try {
+      const imageUrl = await uploadImage(image);
+      const analysisId = await saveAnalysis(
+        imageUrl,
+        result.tags,
+        result.description,
+        result.styleDNA,
+        timestampStr
+      );
+      setSavedAnalysisId(analysisId);
+      console.log('Analysis saved with ID:', analysisId);
+    } catch (err) {
+      console.error('Failed to save to Supabase:', err);
+      // Continue even if save fails - the main feature should still work
+    }
+
     setStatus(AppStatus.RESULT);
   };
 
@@ -155,6 +182,42 @@ const App: React.FC = () => {
     setStatus(AppStatus.IDLE);
     setCurrentImage(null);
     setAnalysis(null);
+    setSavedAnalysisId(null);
+    setShowQRModal(false);
+  };
+
+  const handlePrint = async () => {
+    if (!receiptRef.current || isPrinting) return;
+
+    setIsPrinting(true);
+    setPrintStatus('CAPTURING...');
+
+    try {
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+
+      setPrintStatus('PRINTING...');
+      const result = await printImage(imageData);
+
+      if (result.success) {
+        setPrintStatus('PRINT COMPLETE!');
+      } else {
+        setPrintStatus(`ERROR: ${result.message}`);
+      }
+    } catch (error) {
+      setPrintStatus('PRINT FAILED');
+      console.error('Print error:', error);
+    } finally {
+      setIsPrinting(false);
+      setTimeout(() => setPrintStatus(null), 3000);
+    }
   };
 
   const renderTitle = () => {
@@ -264,7 +327,7 @@ const App: React.FC = () => {
               <h1 className="font-pixel text-[52px] text-[#1D1E2C] tracking-wider mb-8">
                 {renderTitle()}
               </h1>
-              <ReceiptPrintout analysis={analysis} onReset={handleReset} />
+              <ReceiptPrintout ref={receiptRef} analysis={analysis} onReset={handleReset} />
             </div>
 
             {/* Right: Info & Actions */}
@@ -279,9 +342,15 @@ const App: React.FC = () => {
                 </p>
               </div>
 
-              <PrimaryButton onClick={() => {}}>
-                Print Style Receipt
+              <PrimaryButton onClick={handlePrint} disabled={isPrinting}>
+                {isPrinting ? 'Printing...' : 'Print Style Receipt'}
               </PrimaryButton>
+
+              {printStatus && (
+                <div className="px-6 py-2 bg-[#1D1E2C] text-white font-pixel text-[14px] tracking-wider animate-pulse">
+                  {printStatus}
+                </div>
+              )}
 
               {/* Captured Image */}
               <div className="mt-4">
@@ -299,7 +368,7 @@ const App: React.FC = () => {
 
               {/* Action Buttons */}
               <div className="flex items-center gap-8 mt-4">
-                <SecondaryButton onClick={() => {}}>
+                <SecondaryButton onClick={() => setShowQRModal(true)}>
                   QR/Link
                 </SecondaryButton>
                 <TextButton onClick={handleReset}>
@@ -309,6 +378,13 @@ const App: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* QR Modal */}
+        <QRModal
+          isOpen={showQRModal}
+          onClose={() => setShowQRModal(false)}
+          analysisId={savedAnalysisId}
+        />
       </main>
 
       {/* Hidden canvas for capture */}
