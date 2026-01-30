@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { StyleAnalysis } from '../types';
+import html2canvas from 'html2canvas';
 
 interface QRModalProps {
   isOpen: boolean;
@@ -10,19 +11,30 @@ interface QRModalProps {
 }
 
 const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId, analysis }) => {
-  const [copied, setCopied] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen) return null;
 
   const shareUrl = analysisId ? `${window.location.origin}/share/${analysisId}` : '';
 
-  const handleCopyLink = async () => {
+  const handleDownload = async () => {
+    if (!receiptRef.current) return;
+
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+      });
+
+      const link = document.createElement('a');
+      link.download = `munzi-fit-check-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to download:', err);
     }
   };
 
@@ -74,7 +86,10 @@ const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId, analysis
           <div className="flex gap-6 flex-col md:flex-row">
             {/* Left: Receipt Preview */}
             <div className="flex-1 flex justify-center">
-              <div className="w-[240px] bg-white border-2 border-[#1D1E2C] p-4">
+              <div
+                ref={receiptRef}
+                className="w-[240px] bg-white border-2 border-[#1D1E2C] p-4"
+              >
                 {/* Photo */}
                 <div className="aspect-[4/5] w-full overflow-hidden grayscale contrast-[1.4] brightness-[1.05] mb-3">
                   <img
@@ -134,7 +149,7 @@ const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId, analysis
               </div>
             </div>
 
-            {/* Right: QR & Link */}
+            {/* Right: QR & Download */}
             <div className="flex-1 flex flex-col items-center justify-center">
               {/* QR Code */}
               <div className="p-3 bg-white border-2 border-[#1D1E2C] mb-4">
@@ -150,24 +165,19 @@ const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId, analysis
               {/* Instructions */}
               <p className="font-pretendard text-[14px] text-[#373957] text-center mb-4">
                 QR 코드를 스캔하거나<br />
-                링크를 복사해서 공유하세요!
+                이미지를 다운로드하세요!
               </p>
 
-              {/* Link & Copy */}
-              <div className="flex gap-2 w-full max-w-[250px]">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-[#F6F2FC] border border-[#A56CE8] rounded-lg font-pretendard text-[12px] text-[#373957] truncate"
-                />
-                <button
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-[#A56CE8] text-white font-pixel text-[12px] rounded-lg hover:bg-[#9259D6] transition-colors whitespace-nowrap"
-                >
-                  {copied ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
+              {/* Download Button */}
+              <button
+                onClick={handleDownload}
+                className="px-6 py-3 bg-[#A56CE8] text-white font-pixel text-[16px] rounded-full hover:bg-[#9259D6] transition-colors flex items-center gap-2"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Download
+              </button>
             </div>
           </div>
         )}
