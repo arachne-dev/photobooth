@@ -21,12 +21,17 @@ const QRModal: React.FC<QRModalProps> = ({ isOpen, onClose, analysisId, analysis
     if (!receiptRef.current) return;
 
     try {
-      const canvas = await html2canvas(receiptRef.current, {
+      const element = receiptRef.current;
+      const rect = element.getBoundingClientRect();
+
+      const canvas = await html2canvas(element, {
         backgroundColor: '#ffffff',
         scale: 2,
         useCORS: true,
         allowTaint: true,
         logging: false,
+        width: rect.width,
+        height: rect.height,
       });
 
       const link = document.createElement('a');
